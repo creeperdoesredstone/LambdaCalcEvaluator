@@ -166,14 +166,14 @@ class ApplicationNode:
 	
 	def __repr__(self):
 		caller_str = f"{self.caller}"
-		arg_str = f"{self.arg}"
+		arg_str = f" {self.arg}"
 
 		if isinstance(self.caller, LambdaNode):
 			caller_str = f"({caller_str})"
 		if isinstance(self.arg, (LambdaNode, ApplicationNode)):
 			arg_str = f"({arg_str})"
 		
-		return f"{caller_str} {arg_str}"
+		return f"{caller_str}{arg_str}"
 
 class AssignmentNode:
 	def __init__(self, start_pos: Position, end_pos: Position, name: str, value):
