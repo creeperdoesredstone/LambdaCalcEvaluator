@@ -11,5 +11,5 @@
 - Alpha conversion
 - Eta reduction
 - Free/Bound variable analysis
-- Lambda's with multiple parameters (this can be bypassed with currying)
+- Lambdas with multiple parameters (this can be bypassed with currying)
 ```
