@@ -171,7 +171,7 @@ class ApplicationNode:
 		if isinstance(self.caller, LambdaNode):
 			caller_str = f"({caller_str})"
 		if isinstance(self.arg, (LambdaNode, ApplicationNode)):
-			arg_str = f"({arg_str})"
+			arg_str = f"({arg_str[1:]})"
 		
 		return f"{caller_str}{arg_str}"
 
@@ -336,6 +336,43 @@ class Parser:
 					f"Expected an identifier, 'λ', '(', found token {tok.type} instead."
 				))
 
+def fresh_var(base: str, used: set):
+	i = 0
+	while True:
+		name = f"{base}_{i}"
+		if name not in used: return name
+		i += 1
+
+def get_vars(expr):
+	if isinstance(expr, Identifier):
+		return {expr.name}
+	elif isinstance(expr, LambdaNode):
+		return {expr.param} | get_vars(expr.body)
+	elif isinstance(expr, ApplicationNode):
+		return get_vars(expr.caller) | get_vars(expr.arg)
+	else:
+		return set()
+
+def alpha_convert(expr, used=None):
+	if used is None:
+		used: set = get_vars(expr)
+
+	if isinstance(expr, LambdaNode):
+		if expr.param in used:
+			new_param = fresh_var(expr.param, used)
+			body = substitute(expr.body, expr.param, Identifier(None, None, new_param))
+			return LambdaNode(expr.start_pos, expr.end_pos, new_param, alpha_convert(body, used | {new_param}))
+		else:
+			return LambdaNode(expr.start_pos, expr.end_pos, expr.param, alpha_convert(expr.body, used | {expr.param}))
+	elif isinstance(expr, ApplicationNode):
+		return ApplicationNode(
+			expr.start_pos, expr.end_pos,
+			alpha_convert(expr.caller, used),
+			alpha_convert(expr.arg, used)
+		)
+	else:
+		return expr
+
 def substitute(expr, var_name: str, value):
 	if isinstance(expr, Identifier):
 		return value if expr.name == var_name else expr
@@ -367,7 +404,8 @@ def reduce_step(expr, context):
 		func = reduce_step(expr.caller, context)
 		arg = reduce_step(expr.arg, context)
 		if isinstance(func, LambdaNode):
-			return substitute(func.body, func.param, arg)
+			body = alpha_convert(func.body)
+			return substitute(body, func.param, arg)
 		return ApplicationNode(expr.start_pos, expr.end_pos, func, arg)
 	elif isinstance(expr, LambdaNode):
 		return LambdaNode(expr.start_pos, expr.end_pos, expr.param, reduce_step(expr.body, context))
