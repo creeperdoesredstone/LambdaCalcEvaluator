@@ -1,5 +1,6 @@
 from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QTextEdit, QDialog, QLabel
 from PyQt6.QtCore import Qt, QEvent
+from PyQt6.QtGui import QTextCursor
 from sys import argv
 
 import lambda_parser
@@ -59,6 +60,15 @@ class MainWindow(QMainWindow):
 	def eventFilter(self, a0, a1):
 		if a0 == self.code_edit:
 			if a1.type() == QEvent.Type.KeyPress:
+				cursor = self.code_edit.textCursor()
+				block = cursor.block()
+
+				if block.text() == "/bools":
+					cursor.setPosition(block.position())
+					cursor.setPosition(block.position() + len(block.text()), QTextCursor.MoveMode.KeepAnchor)
+					cursor.insertText("λt.λf.t -> TRUE\nλt.λf.f -> FALSE")
+					return True
+			
 				if a1.key() in (Qt.Key.Key_At, Qt.Key.Key_Backslash):
 					self.code_edit.insertPlainText("λ")
 					return True
@@ -84,7 +94,7 @@ class MainWindow(QMainWindow):
 		else:
 			self.result.setText(f"{result}")
 			self.res = result
-	
+
 	def convert(self):
 		if self.res is None: return
 
